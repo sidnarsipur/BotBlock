@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Shield, 
@@ -13,12 +15,10 @@ import {
   List,
   Trash2
 } from 'lucide-react';
-import { INITIAL_CRAWLER_CSV, FILE_TYPES } from './data';
-import { parseCSV } from './utils';
-import CrawlerIcon from './components/CrawlerIcon';
-import PreviewCard from './components/PreviewCard';
-
-
+import { INITIAL_CRAWLER_CSV, FILE_TYPES } from '../data';
+import { parseCSV } from '../utils';
+import CrawlerIcon from '../components/CrawlerIcon';
+import PreviewCard from '../components/PreviewCard';
 
 export default function App() {
   // --- State ---
@@ -44,12 +44,6 @@ export default function App() {
   useEffect(() => {
     const parsed = parseCSV(INITIAL_CRAWLER_CSV);
     setCrawlers(parsed);
-    
-    // Auto-block training bots by default
-    const trainingBots = parsed
-      .filter(c => c.type === 'training')
-      .map(c => c['user-agent']);
-    setBlockedCrawlers(new Set(trainingBots));
   }, []);
 
   // --- Memoized Filters (Moved up for Handler Access) ---
@@ -748,4 +742,3 @@ export default function App() {
     </div>
   );
 }
-
