@@ -868,13 +868,13 @@ export default function App() {
                                 onClick={() => handleBulkCrawlerAction('block')}
                                 className="px-3 py-1.5 bg-terminal-header border border-terminal-border text-slate-300 hover:border-red-900/50 hover:text-red-400 rounded text-xs font-medium transition-colors whitespace-nowrap font-mono"
                             >
-                                Block Bots
+                                Block All
                             </button>
                             <button 
                                 onClick={() => handleBulkCrawlerAction('allow')}
                                 className="px-3 py-1.5 bg-terminal-header border border-terminal-border text-slate-300 hover:border-emerald-900/50 hover:text-emerald-400 rounded text-xs font-medium transition-colors whitespace-nowrap font-mono"
                             >
-                                Allow Bots
+                                Allow All
                             </button>
                             <button 
                                 onClick={allowSEOBots}
