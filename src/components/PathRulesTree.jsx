@@ -79,14 +79,14 @@ const PathNode = ({ node, rules, onToggleRule, depth = 0 }) => {
   const isAllowed = effectiveStatus === 'allow';
   
   // Visual styles based on state
-  const rowBg = currentRule === 'block' ? 'bg-red-50/80 border-red-100' : 
-                currentRule === 'allow' ? 'bg-emerald-50/80 border-emerald-100' : 
-                'hover:bg-slate-50 border-transparent';
+  const rowBg = currentRule === 'block' ? 'bg-red-50/80 dark:bg-red-900/20 border-red-100 dark:border-red-900/30' : 
+                currentRule === 'allow' ? 'bg-emerald-50/80 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-900/30' : 
+                'hover:bg-slate-50 dark:hover:bg-slate-800 border-transparent';
                 
-  const textStyle = currentRule === 'block' ? 'text-red-700 font-medium' :
-                    currentRule === 'allow' ? 'text-emerald-700 font-medium' :
-                    isBlocked ? 'text-red-400/70' : // Inherited block
-                    'text-slate-600';
+  const textStyle = currentRule === 'block' ? 'text-red-700 dark:text-red-400 font-medium' :
+                    currentRule === 'allow' ? 'text-emerald-700 dark:text-emerald-400 font-medium' :
+                    isBlocked ? 'text-red-400/70 dark:text-red-400/50' : // Inherited block
+                    'text-slate-600 dark:text-slate-400';
 
   return (
     <div className="select-none">
@@ -99,12 +99,12 @@ const PathNode = ({ node, rules, onToggleRule, depth = 0 }) => {
       >
         <div className="flex items-center flex-1 min-w-0 cursor-pointer" onClick={() => hasChildren && setIsExpanded(!isExpanded)}>
           {/* Expand Toggle */}
-          <div className={`mr-1 p-1 rounded-md text-slate-400 hover:bg-slate-200/50 transition-colors ${!hasChildren && 'invisible'}`}>
+          <div className={`mr-1 p-1 rounded-md text-slate-400 dark:text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors ${!hasChildren && 'invisible'}`}>
             {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
           </div>
 
           {/* Icon */}
-          <div className={`mr-3 ${currentRule ? (currentRule === 'block' ? 'text-red-500' : 'text-emerald-500') : 'text-slate-400'}`}>
+          <div className={`mr-3 ${currentRule ? (currentRule === 'block' ? 'text-red-500 dark:text-red-400' : 'text-emerald-500 dark:text-emerald-400') : 'text-slate-400 dark:text-slate-500'}`}>
             {hasChildren ? <Folder className="w-4 h-4" /> : <File className="w-4 h-4" />}
           </div>
 
@@ -115,7 +115,7 @@ const PathNode = ({ node, rules, onToggleRule, depth = 0 }) => {
                 /{node.segment}
                 </span>
                 {source === 'inherited' && (
-                    <span className="ml-2 text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded border border-slate-200 flex items-center">
+                    <span className="ml-2 text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded border border-slate-200 dark:border-slate-700 flex items-center">
                         <CornerDownRight className="w-3 h-3 mr-1" />
                         {isBlocked ? 'Blocked by parent' : 'Allowed by parent'}
                     </span>
@@ -133,8 +133,8 @@ const PathNode = ({ node, rules, onToggleRule, depth = 0 }) => {
             className={`
               p-1.5 rounded-md transition-all
               ${currentRule === 'allow' 
-                ? 'bg-emerald-100 text-emerald-700 shadow-sm ring-1 ring-emerald-200' 
-                : 'text-slate-400 hover:bg-emerald-50 hover:text-emerald-600'}
+                ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 shadow-sm ring-1 ring-emerald-200 dark:ring-emerald-900/50' 
+                : 'text-slate-400 dark:text-slate-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400'}
             `}
             title="Allow Path"
           >
@@ -146,8 +146,8 @@ const PathNode = ({ node, rules, onToggleRule, depth = 0 }) => {
             className={`
               p-1.5 rounded-md transition-all
               ${currentRule === 'block' 
-                ? 'bg-red-100 text-red-700 shadow-sm ring-1 ring-red-200' 
-                : 'text-slate-400 hover:bg-red-50 hover:text-red-600'}
+                ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 shadow-sm ring-1 ring-red-200 dark:ring-red-900/50' 
+                : 'text-slate-400 dark:text-slate-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400'}
             `}
             title="Block Path"
           >
@@ -157,7 +157,7 @@ const PathNode = ({ node, rules, onToggleRule, depth = 0 }) => {
           {currentRule && (
             <button
                 onClick={() => onToggleRule(node.fullPath, null)}
-                className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all"
+                className="p-1.5 rounded-md text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300 transition-all"
                 title="Clear Rule"
             >
                 <Minus className="w-4 h-4" />
@@ -171,7 +171,7 @@ const PathNode = ({ node, rules, onToggleRule, depth = 0 }) => {
         <div className="relative">
             {/* Vertical guide line */}
             <div 
-                className="absolute left-0 top-0 bottom-0 border-l border-slate-200/50" 
+                className="absolute left-0 top-0 bottom-0 border-l border-slate-200/50 dark:border-slate-700/50" 
                 style={{ left: `${(depth * 24) + 27}px` }} 
             />
             {node.children.map(child => (
@@ -194,9 +194,9 @@ export default function PathRulesTree({ paths, rules, onToggleRule }) {
 
   if (paths.length === 0) {
     return (
-        <div className="flex flex-col items-center justify-center h-64 text-slate-400">
-            <div className="bg-slate-50 p-4 rounded-full mb-3">
-                <Folder className="w-8 h-8 text-slate-300" />
+        <div className="flex flex-col items-center justify-center h-64 text-slate-400 dark:text-slate-500">
+            <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-full mb-3">
+                <Folder className="w-8 h-8 text-slate-300 dark:text-slate-600" />
             </div>
             <p>No paths detected yet.</p>
         </div>
