@@ -3,11 +3,9 @@ module.exports = {
   content: [
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: 'class',
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
       },
       colors: {
@@ -32,10 +30,6 @@ module.exports = {
           950: '#2e1065',
         },
       },
-      boxShadow: {
-        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
-        'glow': '0 0 20px -5px rgba(124, 58, 237, 0.3)',
-      }
     },
   },
   plugins: [],
