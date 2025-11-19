@@ -20,14 +20,20 @@ BingPreview,MicrosoftPreview,preview,
 MicrosoftSearch,msnbot,seo,
 Facebook,FacebookBot,training,
 Twitter,TwitterBot,social,
+Meta,Meta-ExternalAgent,training,
+Meta,Meta-WebIndexer,search,
+Amazon,AmazonBot,training,
 Discord,DiscordBot,social,
 Yahoo,Slurp,seo,
 OpenAI,ChatGPT-User,chat,plugins
 OpenAI,GPTBot,training,
-Anthropic,anthropic-ai,training,
-Anthropic,anthropicAi,training,
+Apple,Applebot,training,
+OpenAI,OAI-SearchBot,search,
+Anthropic,ClaudeBot,training,
+Anthropic,Claude-User,search,
+Anthropic,Claude-SearchBot,search,
 Common Crawl,CCBot,training,
-Omigili ,Omgilibot,training,`;
+Omigili,Omgilibot,training,`;
 
 export const FILE_TYPES = [
   { 
