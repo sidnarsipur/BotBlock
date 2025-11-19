@@ -19,7 +19,8 @@ import {
   ChevronRight,
   Code,
   Moon,
-  Sun
+  Sun,
+  History
 } from 'lucide-react';
 import { INITIAL_CRAWLER_CSV, FILE_TYPES } from '../data';
 import { parseCSV } from '../utils';
@@ -47,6 +48,7 @@ export default function App() {
   const [userDomain, setUserDomain] = useState('https://example.com');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
+  const [hasSavedPrefs, setHasSavedPrefs] = useState(false);
 
   // Add Forms State
   const [showAddCrawler, setShowAddCrawler] = useState(false);
@@ -73,6 +75,58 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [darkMode]);
+
+  // Check for saved prefs
+  useEffect(() => {
+    const saved = localStorage.getItem('botblock_prefs');
+    if (saved) setHasSavedPrefs(true);
+  }, []);
+
+  // --- Preferences ---
+  const savePreferences = () => {
+    const prefs = {
+      extensionRules,
+      blockedCrawlers: Array.from(blockedCrawlers),
+      // Strip icons before saving to avoid React object serialization issues
+      fileGroups: fileGroups.map(g => ({
+        category: g.category,
+        extensions: g.extensions
+      }))
+    };
+    localStorage.setItem('botblock_prefs', JSON.stringify(prefs));
+    setHasSavedPrefs(true);
+  };
+
+  const loadPreferences = (type) => {
+    const saved = localStorage.getItem('botblock_prefs');
+    if (!saved) return;
+    
+    try {
+      const prefs = JSON.parse(saved);
+      
+      if (type === 'media' || type === 'all') {
+          if (prefs.extensionRules) setExtensionRules(prefs.extensionRules);
+          if (prefs.fileGroups) {
+            // Rehydrate icons
+            const rehydratedGroups = prefs.fileGroups.map(g => {
+                // Try to find matching default group
+                const defaultGroup = FILE_TYPES.find(d => d.category === g.category);
+                return {
+                    ...g,
+                    icon: defaultGroup ? defaultGroup.icon : <File className="w-5 h-5 text-slate-500" />
+                };
+            });
+            setFileGroups(rehydratedGroups);
+          }
+      }
+      
+      if (type === 'crawlers' || type === 'all') {
+          if (prefs.blockedCrawlers) setBlockedCrawlers(new Set(prefs.blockedCrawlers));
+      }
+    } catch (e) {
+      console.error("Failed to load preferences", e);
+    }
+  };
 
   // --- Memoized Filters (Moved up for Handler Access) ---
   const filteredCrawlers = useMemo(() => {
@@ -380,6 +434,7 @@ export default function App() {
   };
 
   const copyToClipboard = () => {
+    savePreferences();
     const text = generateRobotsTxt();
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -387,6 +442,7 @@ export default function App() {
   };
 
   const downloadFile = () => {
+    savePreferences();
     const text = generateRobotsTxt();
     const blob = new Blob([text], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -657,13 +713,25 @@ export default function App() {
                     <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-soft border border-slate-100 dark:border-slate-800 overflow-hidden animate-fadeIn">
                     <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
                         <h3 className="font-semibold text-slate-800 dark:text-white">File Extensions</h3>
-                        <button 
-                            onClick={() => setShowAddFile(!showAddFile)}
-                            className="flex items-center space-x-1 px-3 py-1.5 bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-900/30 transition-colors text-sm font-medium"
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span>Add File Type</span>
-                        </button>
+                        <div className="flex gap-2">
+                            {hasSavedPrefs && (
+                                <button 
+                                    onClick={() => loadPreferences('media')}
+                                    className="flex items-center space-x-1 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-sm font-medium"
+                                    title="Restore previously saved file rules"
+                                >
+                                    <History className="w-4 h-4" />
+                                    <span>Re-use Rules</span>
+                                </button>
+                            )}
+                            <button 
+                                onClick={() => setShowAddFile(!showAddFile)}
+                                className="flex items-center space-x-1 px-3 py-1.5 bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-900/30 transition-colors text-sm font-medium"
+                            >
+                                <Plus className="w-4 h-4" />
+                                <span>Add File Type</span>
+                            </button>
+                        </div>
                     </div>
                     
                     {showAddFile && (
@@ -834,12 +902,24 @@ export default function App() {
                             >
                                 Allow SEO
                             </button>
-                            <button 
-                                onClick={() => handleBulkCrawlerAction('reset')}
-                                className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-xs font-medium transition-colors ml-auto"
-                            >
-                                Clear
-                            </button>
+                            <div className="ml-auto flex gap-2">
+                                {hasSavedPrefs && (
+                                    <button 
+                                        onClick={() => loadPreferences('crawlers')}
+                                        className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-xs font-medium transition-colors whitespace-nowrap flex items-center gap-1"
+                                        title="Restore previously saved crawler rules"
+                                    >
+                                        <History className="w-3 h-3" />
+                                        <span>Re-use</span>
+                                    </button>
+                                )}
+                                <button 
+                                    onClick={() => handleBulkCrawlerAction('reset')}
+                                    className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-xs font-medium transition-colors"
+                                >
+                                    Clear
+                                </button>
+                            </div>
                     </div>
 
                     {/* Crawler List */}
