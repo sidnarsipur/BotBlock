@@ -313,17 +313,23 @@ export default function App() {
       // Filter out redundant rules (e.g. if / is blocked, /blog doesn't need explicit block)
       const effectiveRules = activePaths.reduce((acc, path) => {
           const rule = pathRules[path];
-          // Check if covered by a shorter parent rule of same type
-          const isRedundant = activePaths.some(parent => {
-              if (parent === path) return false;
-              // Only redundant if parent covers it AND has the SAME rule
-              if (path.startsWith(parent) && pathRules[parent] === rule) return true;
-              return false;
-          });
           
-          if (!isRedundant) {
-              acc.push({ path, rule });
+          // Find closest parent with a rule
+          // Note: We use string startsWith because robots.txt uses prefix matching
+          const parents = activePaths.filter(p => p !== path && path.startsWith(p));
+          
+          // Sort by length desc to get closest parent (longest string)
+          parents.sort((a, b) => b.length - a.length);
+          const closestParent = parents[0];
+          
+          if (closestParent) {
+              // If closest parent has same rule, this is redundant
+              if (pathRules[closestParent] === rule) {
+                  return acc;
+              }
           }
+          
+          acc.push({ path, rule });
           return acc;
       }, []);
 
