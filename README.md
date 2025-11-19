@@ -6,4 +6,4 @@ BotBlock takes in your sitemap and allows you to generate a tailored robots.txt 
 
 <br>
 
-<img width="1137" height="753" alt="Screenshot 2025-11-19 at 2 03 18 AM" src="https://github.com/user-attachments/assets/26f0f9f2-8bc6-4343-b02a-e8434d320fa5" />
+<img width="1457" height="867" alt="Screenshot 2025-11-19 at 4 25 11 AM" src="https://github.com/user-attachments/assets/085c5ced-2997-4211-a6e4-60df77d69432" />
