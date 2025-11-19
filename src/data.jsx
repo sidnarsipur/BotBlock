@@ -32,22 +32,22 @@ Omigili ,Omgilibot,training,`;
 export const FILE_TYPES = [
   { 
     category: 'Documents', 
-    icon: <FileText className="w-5 h-5 text-blue-500" />, 
+    icon: <FileText className="w-5 h-5" />, 
     extensions: ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt', '.rtf'] 
   },
   { 
     category: 'Images', 
-    icon: <ImageIcon className="w-5 h-5 text-pink-500" />, 
+    icon: <ImageIcon className="w-5 h-5" />, 
     extensions: ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.tiff', '.bmp'] 
   },
   { 
     category: 'Audio & Video', 
-    icon: <Film className="w-5 h-5 text-purple-500" />, 
+    icon: <Film className="w-5 h-5" />, 
     extensions: ['.mp4', '.avi', '.mov', '.wmv', '.mp3', '.wav', '.ogg', '.flac'] 
   },
   { 
     category: 'Code & Data', 
-    icon: <Code className="w-5 h-5 text-emerald-500" />, 
+    icon: <Code className="w-5 h-5" />, 
     extensions: ['.json', '.xml', '.sql', '.zip', '.tar', '.gz', '.env', '.log', '.bak'] 
   }
 ];
