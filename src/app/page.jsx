@@ -848,7 +848,8 @@ export default function App() {
             </div>
 
             {/* Right Column: Preview & Actions (Desktop Sticky) */}
-            <div className="hidden lg:block lg:col-span-5 space-y-6">
+            <div className="hidden lg:block lg:col-span-5">
+              <div className="sticky top-6 space-y-6">
                 <PreviewCard 
                     blockedCrawlers={blockedCrawlers} 
                     pathRules={pathRules} 
@@ -890,6 +891,7 @@ export default function App() {
                         </div>
                     </div>
                 </div>
+              </div>
             </div>
 
           </div>

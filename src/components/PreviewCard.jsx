@@ -11,7 +11,7 @@ function PreviewCard({ blockedCrawlers, pathRules, extensionRules, generateRobot
     const hasRules = blockedCrawlers.size > 0 || Object.keys(pathRules).length > 0 || Object.keys(extensionRules).length > 0;
 
     return (
-        <div className="bg-[#1e1e2e] rounded-2xl shadow-2xl overflow-hidden flex flex-col sticky top-6 border border-slate-800">
+        <div className="bg-[#1e1e2e] rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-800">
             <div className="p-4 bg-[#252538] border-b border-slate-800 flex justify-between items-center">
                 <div className="flex items-center space-x-2">
                     <div className="flex space-x-1.5">
