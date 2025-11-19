@@ -336,8 +336,14 @@ export default function App() {
       });
 
       sortedRules.forEach(({ path, rule }) => {
-        if (rule === 'allow') content += `Allow: ${path}\n`;
-        if (rule === 'block') content += `Disallow: ${path}\n`;
+        let formattedPath = path;
+        // Add trailing slash if missing and doesn't look like a file
+        if (!formattedPath.endsWith('/') && !formattedPath.split('/').pop().includes('.')) {
+            formattedPath += '/';
+        }
+
+        if (rule === 'allow') content += `Allow: ${formattedPath}\n`;
+        if (rule === 'block') content += `Disallow: ${formattedPath}\n`;
       });
       content += `\n`;
     }

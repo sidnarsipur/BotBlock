@@ -53,9 +53,6 @@ const buildPathTree = (paths) => {
 const getEffectiveStatus = (fullPath, rules) => {
   if (rules[fullPath]) return { status: rules[fullPath], source: 'explicit' };
 
-  // Check root rule first
-  if (rules['/']) return { status: rules['/'], source: 'inherited' };
-
   const parts = fullPath.split('/').filter(Boolean);
   // Check from longest parent down to root
   for (let i = parts.length - 1; i >= 0; i--) {
@@ -64,6 +61,9 @@ const getEffectiveStatus = (fullPath, rules) => {
       return { status: rules[parentPath], source: 'inherited' };
     }
   }
+  
+  // Check root rule last
+  if (rules['/']) return { status: rules['/'], source: 'inherited' };
   
   return { status: 'allow', source: 'default' };
 };
