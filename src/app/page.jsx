@@ -13,7 +13,8 @@ import {
   Settings,
   File,
   List,
-  Trash2
+  Trash2,
+  Plus
 } from 'lucide-react';
 import { INITIAL_CRAWLER_CSV, FILE_TYPES } from '../data';
 import { parseCSV } from '../utils';
@@ -25,6 +26,7 @@ export default function App() {
   const [crawlers, setCrawlers] = useState([]);
   const [sitemapXml, setSitemapXml] = useState('');
   const [paths, setPaths] = useState([]);
+  const [fileGroups, setFileGroups] = useState(FILE_TYPES);
   
   // Rules storage: { key: 'block' | 'allow' }
   const [pathRules, setPathRules] = useState({}); 
@@ -37,6 +39,12 @@ export default function App() {
   const [filterType, setFilterType] = useState('all');
   const [copied, setCopied] = useState(false);
   const [userDomain, setUserDomain] = useState('https://example.com');
+
+  // Add Forms State
+  const [showAddCrawler, setShowAddCrawler] = useState(false);
+  const [newCrawler, setNewCrawler] = useState({ company: '', ua: '', type: 'other' });
+  const [showAddFile, setShowAddFile] = useState(false);
+  const [newFile, setNewFile] = useState({ ext: '', category: 'Custom' });
 
   const fileInputRef = useRef(null);
 
@@ -65,6 +73,48 @@ export default function App() {
   }, [paths, pathSearchTerm]);
 
   // --- Handlers ---
+
+  const handleAddCrawler = () => {
+    if (!newCrawler.ua) return;
+    const crawler = {
+      company: newCrawler.company || 'Custom',
+      'user-agent': newCrawler.ua,
+      type: newCrawler.type,
+      notes: 'Custom added'
+    };
+    setCrawlers(prev => [crawler, ...prev]);
+    setNewCrawler({ company: '', ua: '', type: 'other' });
+    setShowAddCrawler(false);
+  };
+
+  const handleAddFileType = () => {
+    if (!newFile.ext) return;
+    let ext = newFile.ext.trim();
+    if (!ext.startsWith('.')) ext = '.' + ext;
+
+    setFileGroups(prev => {
+      const newGroups = [...prev];
+      const groupIndex = newGroups.findIndex(g => g.category === newFile.category);
+      
+      if (groupIndex >= 0) {
+        // Add to existing group if not exists
+        if (!newGroups[groupIndex].extensions.includes(ext)) {
+             const updatedExtensions = [...newGroups[groupIndex].extensions, ext];
+             newGroups[groupIndex] = { ...newGroups[groupIndex], extensions: updatedExtensions };
+        }
+      } else {
+        // Create new group
+        newGroups.push({
+          category: newFile.category,
+          icon: <File className="w-5 h-5 text-slate-500" />,
+          extensions: [ext]
+        });
+      }
+      return newGroups;
+    });
+    setNewFile({ ext: '', category: 'Custom' });
+    setShowAddFile(false);
+  };
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
@@ -525,16 +575,56 @@ export default function App() {
           {/* Tab Content: Media & Files */}
           {activeTab === 'media' && (
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-fadeIn">
-              <div className="p-6 border-b border-slate-100">
-                <h2 className="text-lg font-semibold flex items-center text-slate-800">
-                  <File className="w-5 h-5 mr-2 text-indigo-500" />
-                  Media & File Types
-                </h2>
-                <p className="text-slate-500 text-sm mt-1">Click once to <strong className="text-red-600">Block</strong> (Disallow), twice to <strong className="text-green-600">Enable</strong> (Allow) for all bots.</p>
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                <div>
+                    <h2 className="text-lg font-semibold flex items-center text-slate-800">
+                    <File className="w-5 h-5 mr-2 text-indigo-500" />
+                    Media & File Types
+                    </h2>
+                    <p className="text-slate-500 text-sm mt-1">Click once to <strong className="text-red-600">Block</strong> (Disallow), twice to <strong className="text-green-600">Enable</strong> (Allow) for all bots.</p>
+                </div>
+                <button 
+                    onClick={() => setShowAddFile(!showAddFile)}
+                    className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors"
+                >
+                    <Plus className="w-5 h-5" />
+                </button>
               </div>
               
+              {showAddFile && (
+                <div className="p-4 bg-indigo-50 border-b border-indigo-100 flex gap-2 items-end animate-fadeIn">
+                    <div className="flex-1">
+                        <label className="text-xs font-bold text-indigo-800 uppercase mb-1 block">Extension</label>
+                        <input 
+                            type="text" 
+                            placeholder=".xyz" 
+                            className="w-full px-3 py-2 rounded-lg border border-indigo-200 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                            value={newFile.ext}
+                            onChange={(e) => setNewFile({...newFile, ext: e.target.value})}
+                        />
+                    </div>
+                    <div className="flex-1">
+                        <label className="text-xs font-bold text-indigo-800 uppercase mb-1 block">Category</label>
+                        <select 
+                            className="w-full px-3 py-2 rounded-lg border border-indigo-200 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                            value={newFile.category}
+                            onChange={(e) => setNewFile({...newFile, category: e.target.value})}
+                        >
+                            {fileGroups.map(g => <option key={g.category} value={g.category}>{g.category}</option>)}
+                            <option value="Custom">Custom</option>
+                        </select>
+                    </div>
+                    <button 
+                        onClick={handleAddFileType}
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 transition-colors shadow-sm"
+                    >
+                        Add
+                    </button>
+                </div>
+              )}
+
               <div className="p-6 space-y-8">
-                {FILE_TYPES.map((group, idx) => (
+                {fileGroups.map((group, idx) => (
                   <div key={idx}>
                     <div className="flex items-center gap-2 mb-3">
                       {group.icon}
@@ -579,13 +669,65 @@ export default function App() {
           {/* Tab Content: Crawlers */}
           {activeTab === 'crawlers' && (
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-fadeIn">
-              <div className="p-6 border-b border-slate-100">
-                <h2 className="text-lg font-semibold flex items-center text-slate-800">
-                  <Bot className="w-5 h-5 mr-2 text-indigo-500" />
-                  Manage Crawler Access
-                </h2>
-                <p className="text-slate-500 text-sm mt-1">Select which bots to ban completely from your site.</p>
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                <div>
+                    <h2 className="text-lg font-semibold flex items-center text-slate-800">
+                    <Bot className="w-5 h-5 mr-2 text-indigo-500" />
+                    Manage Crawler Access
+                    </h2>
+                    <p className="text-slate-500 text-sm mt-1">Select which bots to ban completely from your site.</p>
+                </div>
+                <button 
+                    onClick={() => setShowAddCrawler(!showAddCrawler)}
+                    className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors"
+                >
+                    <Plus className="w-5 h-5" />
+                </button>
               </div>
+
+              {showAddCrawler && (
+                <div className="p-4 bg-indigo-50 border-b border-indigo-100 flex flex-col md:flex-row gap-2 items-end animate-fadeIn">
+                    <div className="flex-1 w-full">
+                        <label className="text-xs font-bold text-indigo-800 uppercase mb-1 block">User Agent</label>
+                        <input 
+                            type="text" 
+                            placeholder="e.g. MyCustomBot" 
+                            className="w-full px-3 py-2 rounded-lg border border-indigo-200 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                            value={newCrawler.ua}
+                            onChange={(e) => setNewCrawler({...newCrawler, ua: e.target.value})}
+                        />
+                    </div>
+                    <div className="flex-1 w-full">
+                        <label className="text-xs font-bold text-indigo-800 uppercase mb-1 block">Company</label>
+                        <input 
+                            type="text" 
+                            placeholder="e.g. Acme Corp" 
+                            className="w-full px-3 py-2 rounded-lg border border-indigo-200 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                            value={newCrawler.company}
+                            onChange={(e) => setNewCrawler({...newCrawler, company: e.target.value})}
+                        />
+                    </div>
+                    <div className="w-full md:w-32">
+                        <label className="text-xs font-bold text-indigo-800 uppercase mb-1 block">Type</label>
+                        <select 
+                            className="w-full px-3 py-2 rounded-lg border border-indigo-200 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                            value={newCrawler.type}
+                            onChange={(e) => setNewCrawler({...newCrawler, type: e.target.value})}
+                        >
+                            <option value="other">Other</option>
+                            <option value="seo">SEO</option>
+                            <option value="training">Training</option>
+                            <option value="research">Research</option>
+                        </select>
+                    </div>
+                    <button 
+                        onClick={handleAddCrawler}
+                        className="w-full md:w-auto px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 transition-colors shadow-sm"
+                    >
+                        Add
+                    </button>
+                </div>
+              )}
 
               {/* Filters */}
               <div className="p-4 bg-slate-50 border-b border-slate-200 sticky top-0 z-10 space-y-3">
