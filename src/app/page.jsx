@@ -804,8 +804,8 @@ export default function App() {
                             >
                                 <option value="all">All</option>
                                 <option value="seo">SEO</option>
-                                <option value="training">AI</option>
-                                <option value="research">Research</option>
+                                <option value="training">Model Training</option>
+                                <option value="ai-search">AI Search</option>
                             </select>
                         </div>
                         
@@ -849,8 +849,8 @@ export default function App() {
                                 >
                                     <option value="other">Other</option>
                                     <option value="seo">SEO</option>
-                                    <option value="training">Training</option>
-                                    <option value="research">Research</option>
+                                    <option value="training">Model Training</option>
+                                    <option value="ai-search">AI Search</option>
                                 </select>
                             </div>
                             <button 
