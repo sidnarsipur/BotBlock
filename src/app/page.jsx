@@ -46,7 +46,7 @@ export default function App() {
   const [copied, setCopied] = useState(false);
   const [userDomain, setUserDomain] = useState('https://example.com');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
 
   // Add Forms State
   const [showAddCrawler, setShowAddCrawler] = useState(false);
@@ -389,24 +389,24 @@ export default function App() {
 
   const getStatusStyles = (status) => {
     if (status === 'block') return { 
-      bg: 'bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30', 
-      border: 'border-red-200 dark:border-red-900/30', 
-      text: 'text-red-700 dark:text-red-400', 
+      bg: 'bg-red-50 hover:bg-red-100', 
+      border: 'border-red-200', 
+      text: 'text-red-700', 
       iconBg: 'bg-red-500 border-red-500', 
       icon: <X className="w-3 h-3 text-white" /> 
     };
     if (status === 'allow') return { 
-      bg: 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/30', 
-      border: 'border-emerald-200 dark:border-emerald-900/30', 
-      text: 'text-emerald-700 dark:text-emerald-400', 
+      bg: 'bg-emerald-50 hover:bg-emerald-100', 
+      border: 'border-emerald-200', 
+      text: 'text-emerald-700', 
       iconBg: 'bg-emerald-500 border-emerald-500', 
       icon: <Check className="w-3 h-3 text-white" /> 
     };
     return { 
-      bg: 'bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700', 
-      border: 'border-slate-200 dark:border-slate-700', 
-      text: 'text-slate-600 dark:text-slate-400', 
-      iconBg: 'bg-white border-slate-300 dark:bg-slate-700 dark:border-slate-600', 
+      bg: 'bg-white hover:bg-slate-50', 
+      border: 'border-slate-200', 
+      text: 'text-slate-600', 
+      iconBg: 'bg-white border-slate-300', 
       icon: null 
     };
   };
@@ -479,8 +479,8 @@ export default function App() {
 
         <div className="absolute bottom-0 left-0 right-0 p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <span>Database Version</span>
-            <span className="font-mono bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded text-slate-700 dark:text-slate-300">v2.4.0</span>
+            <span>Cleo Version</span>
+            <span className="font-mono bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded text-slate-700 dark:text-slate-300">v1.0.0</span>
           </div>
         </div>
       </aside>
