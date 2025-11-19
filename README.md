@@ -1,6 +1,8 @@
 # BotBlock
 
-Generate custom [robots.txt](https://developers.google.com/search/docs/crawling-indexing/robots/intro) files from your sitemap.xml.
+Generate custom [robots.txt](https://developers.google.com/search/docs/crawling-indexing/robots/intro) files from your sitemap.xml. 
+
+BotBlock takes in your sitemap and allows you to generate a tailored robots.txt file that only blocks certain pages, file types, and crawlers.
 
 <br>
 
