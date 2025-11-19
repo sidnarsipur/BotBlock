@@ -11,6 +11,13 @@ module.exports = {
         mono: ['"JetBrains Mono"', 'monospace'],
       },
       colors: {
+        terminal: {
+          main: '#1e1e2e',
+          header: '#252538',
+          footer: '#181825',
+          border: '#2e2e42',
+          hover: '#313244',
+        },
         brand: {
           50: '#f5f3ff',
           100: '#ede9fe',

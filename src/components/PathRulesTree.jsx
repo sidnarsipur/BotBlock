@@ -80,34 +80,34 @@ const PathNode = ({ node, rules, onToggleRule, depth = 0 }) => {
   const isInheritedBlock = !currentRule && effectiveStatus === 'block' && source === 'inherited';
   
   // Visual styles based on state
-  const rowBg = currentRule === 'block' ? 'bg-red-50/80 dark:bg-red-900/20 border-red-100 dark:border-red-900/30' : 
-                currentRule === 'allow' ? 'bg-emerald-50/80 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-900/30' : 
-                isInheritedAllow ? 'bg-emerald-50/30 dark:bg-emerald-900/10 border-emerald-50/50 dark:border-emerald-900/10' :
-                'hover:bg-slate-50 dark:hover:bg-slate-800 border-transparent';
+  const rowBg = currentRule === 'block' ? 'bg-red-900/20 border-red-900/30' : 
+                currentRule === 'allow' ? 'bg-emerald-900/20 border-emerald-900/30' : 
+                isInheritedAllow ? 'bg-emerald-900/10 border-emerald-900/10' :
+                'hover:bg-terminal-hover border-transparent';
                 
-  const textStyle = currentRule === 'block' ? 'text-red-700 dark:text-red-400 font-medium' :
-                    currentRule === 'allow' ? 'text-emerald-700 dark:text-emerald-400 font-medium' :
-                    isBlocked ? 'text-red-400/70 dark:text-red-400/50' : // Inherited block
-                    isInheritedAllow ? 'text-emerald-600/70 dark:text-emerald-400/70' :
-                    'text-slate-600 dark:text-slate-400';
+  const textStyle = currentRule === 'block' ? 'text-red-400 font-medium font-mono' :
+                    currentRule === 'allow' ? 'text-emerald-400 font-medium font-mono' :
+                    isBlocked ? 'text-red-400/50 font-mono' : // Inherited block
+                    isInheritedAllow ? 'text-emerald-400/70 font-mono' :
+                    'text-slate-400 font-mono';
 
   return (
     <div className="select-none">
       <div 
         className={`
-          flex items-center justify-between py-2 px-3 rounded-lg mb-1 border transition-all duration-200 group
+          flex items-center justify-between py-2 px-3 rounded mb-1 border transition-all duration-200 group
           ${rowBg}
         `}
         style={{ marginLeft: `${depth * 24}px` }}
       >
         <div className="flex items-center flex-1 min-w-0 cursor-pointer" onClick={() => hasChildren && setIsExpanded(!isExpanded)}>
           {/* Expand Toggle */}
-          <div className={`mr-1 p-1 rounded-md text-slate-400 dark:text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors ${!hasChildren && 'invisible'}`}>
+          <div className={`mr-1 p-1 rounded text-slate-500 hover:bg-terminal-hover transition-colors ${!hasChildren && 'invisible'}`}>
             {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
           </div>
 
           {/* Icon */}
-          <div className={`mr-3 ${currentRule ? (currentRule === 'block' ? 'text-red-500 dark:text-red-400' : 'text-emerald-500 dark:text-emerald-400') : 'text-slate-400 dark:text-slate-500'}`}>
+          <div className={`mr-3 ${currentRule ? (currentRule === 'block' ? 'text-red-400' : 'text-emerald-400') : 'text-slate-500'}`}>
             {hasChildren ? <Folder className="w-4 h-4" /> : <File className="w-4 h-4" />}
           </div>
 
@@ -118,7 +118,7 @@ const PathNode = ({ node, rules, onToggleRule, depth = 0 }) => {
                 /{node.segment}
                 </span>
                 {source === 'inherited' && (
-                    <span className="ml-2 text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded border border-slate-200 dark:border-slate-700 flex items-center">
+                    <span className="ml-2 text-[10px] px-1.5 py-0.5 bg-terminal-header text-slate-500 rounded border border-terminal-border flex items-center font-mono">
                         <CornerDownRight className="w-3 h-3 mr-1" />
                         {isBlocked ? 'Blocked by parent' : 'Allowed by parent'}
                     </span>
@@ -135,12 +135,12 @@ const PathNode = ({ node, rules, onToggleRule, depth = 0 }) => {
             onClick={() => onToggleRule(node.fullPath, 'allow')}
             disabled={isInheritedAllow}
             className={`
-              p-1.5 rounded-md transition-all
+              p-1.5 rounded transition-all
               ${currentRule === 'allow' 
-                ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 shadow-sm ring-1 ring-emerald-200 dark:ring-emerald-900/50' 
+                ? 'bg-emerald-900/40 text-emerald-400 shadow-sm ring-1 ring-emerald-900/50' 
                 : isInheritedAllow
-                  ? 'opacity-30 cursor-not-allowed text-slate-300 dark:text-slate-600'
-                  : 'text-slate-400 dark:text-slate-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400'}
+                  ? 'opacity-30 cursor-not-allowed text-slate-600'
+                  : 'text-slate-500 hover:bg-emerald-900/20 hover:text-emerald-400'}
             `}
             title={isInheritedAllow ? "Allowed by parent" : "Allow Path"}
           >
@@ -151,12 +151,12 @@ const PathNode = ({ node, rules, onToggleRule, depth = 0 }) => {
             onClick={() => onToggleRule(node.fullPath, 'block')}
             disabled={isInheritedBlock}
             className={`
-              p-1.5 rounded-md transition-all
+              p-1.5 rounded transition-all
               ${currentRule === 'block' 
-                ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 shadow-sm ring-1 ring-red-200 dark:ring-red-900/50' 
+                ? 'bg-red-900/40 text-red-400 shadow-sm ring-1 ring-red-900/50' 
                 : isInheritedBlock
-                  ? 'opacity-30 cursor-not-allowed text-slate-300 dark:text-slate-600'
-                  : 'text-slate-400 dark:text-slate-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400'}
+                  ? 'opacity-30 cursor-not-allowed text-slate-600'
+                  : 'text-slate-500 hover:bg-red-900/20 hover:text-red-400'}
             `}
             title={isInheritedBlock ? "Blocked by parent" : "Block Path"}
           >
@@ -166,7 +166,7 @@ const PathNode = ({ node, rules, onToggleRule, depth = 0 }) => {
           {currentRule && (
             <button
                 onClick={() => onToggleRule(node.fullPath, null)}
-                className="p-1.5 rounded-md text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300 transition-all"
+                className="p-1.5 rounded text-slate-500 hover:bg-terminal-hover hover:text-slate-300 transition-all"
                 title="Clear Rule"
             >
                 <Minus className="w-4 h-4" />
@@ -180,7 +180,7 @@ const PathNode = ({ node, rules, onToggleRule, depth = 0 }) => {
         <div className="relative">
             {/* Vertical guide line */}
             <div 
-                className="absolute left-0 top-0 bottom-0 border-l border-slate-200/50 dark:border-slate-700/50" 
+                className="absolute left-0 top-0 bottom-0 border-l border-terminal-border" 
                 style={{ left: `${(depth * 24) + 27}px` }} 
             />
             {node.children.map(child => (
@@ -203,11 +203,11 @@ export default function PathRulesTree({ paths, rules, onToggleRule }) {
 
   if (paths.length === 0) {
     return (
-        <div className="flex flex-col items-center justify-center h-64 text-slate-400 dark:text-slate-500">
-            <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-full mb-3">
-                <Folder className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+        <div className="flex flex-col items-center justify-center h-64 text-slate-500">
+            <div className="bg-terminal-header p-4 rounded-full mb-3 border border-terminal-border border-dashed">
+                <Folder className="w-8 h-8 text-slate-600" />
             </div>
-            <p>No paths detected yet.</p>
+            <p className="font-mono">No paths detected yet.</p>
         </div>
     );
   }
