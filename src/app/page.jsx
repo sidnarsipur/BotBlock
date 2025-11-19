@@ -288,6 +288,20 @@ export default function App() {
     });
   };
 
+  const handleBulkExtensionAction = (extensions, action) => {
+    setExtensionRules(prev => {
+      const newRules = { ...prev };
+      extensions.forEach(ext => {
+        if (action === 'reset') {
+          delete newRules[ext];
+        } else {
+          newRules[ext] = action;
+        }
+      });
+      return newRules;
+    });
+  };
+
   const toggleCrawler = (ua) => {
     const newBlocked = new Set(blockedCrawlers);
     if (newBlocked.has(ua)) {
@@ -754,6 +768,26 @@ export default function App() {
                                 {group.icon}
                             </div>
                             <h3 className="font-medium text-white font-mono">{group.category}</h3>
+                            <div className="ml-auto flex gap-2">
+                                <button 
+                                    onClick={() => handleBulkExtensionAction(group.extensions, 'block')}
+                                    className="px-2 py-1 bg-red-900/20 text-red-400 hover:bg-red-900/30 border border-red-900/30 rounded text-[10px] font-mono font-medium transition-colors"
+                                >
+                                    Block All
+                                </button>
+                                <button 
+                                    onClick={() => handleBulkExtensionAction(group.extensions, 'allow')}
+                                    className="px-2 py-1 bg-emerald-900/20 text-emerald-400 hover:bg-emerald-900/30 border border-emerald-900/30 rounded text-[10px] font-mono font-medium transition-colors"
+                                >
+                                    Allow All
+                                </button>
+                                <button 
+                                    onClick={() => handleBulkExtensionAction(group.extensions, 'reset')}
+                                    className="px-2 py-1 bg-terminal-main text-slate-400 hover:bg-terminal-hover border border-terminal-border rounded text-[10px] font-mono font-medium transition-colors"
+                                >
+                                    Clear
+                                </button>
+                            </div>
                             </div>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                             {group.extensions.map(ext => {
