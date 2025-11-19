@@ -58,9 +58,8 @@ export default function App() {
     const parsed = parseCSV(INITIAL_CRAWLER_CSV);
     setCrawlers(parsed);
     
-    // Block all bots by default
-    const allBots = parsed.map(c => c['user-agent']);
-    setBlockedCrawlers(new Set(allBots));
+    // Initialize with empty set (Allow All by default)
+    setBlockedCrawlers(new Set());
   }, []);
 
   // --- Memoized Filters (Moved up for Handler Access) ---
@@ -305,6 +304,7 @@ export default function App() {
           // Check if covered by a shorter parent rule of same type
           const isRedundant = activePaths.some(parent => {
               if (parent === path) return false;
+              // Only redundant if parent covers it AND has the SAME rule
               if (path.startsWith(parent) && pathRules[parent] === rule) return true;
               return false;
           });
@@ -315,10 +315,16 @@ export default function App() {
           return acc;
       }, []);
 
-      effectiveRules.forEach(({ path, rule }) => {
-        if (rule === 'allow') content += `Allow: ${path}\n`;
+      // Sort rules: Allows first, then Disallows (standard practice for specificity)
+      // Also sort by length descending within groups to ensure specific rules aren't shadowed if parser is dumb
+      const sortedRules = effectiveRules.sort((a, b) => {
+          if (a.rule === 'allow' && b.rule === 'block') return -1;
+          if (a.rule === 'block' && b.rule === 'allow') return 1;
+          return b.path.length - a.path.length; 
       });
-      effectiveRules.forEach(({ path, rule }) => {
+
+      sortedRules.forEach(({ path, rule }) => {
+        if (rule === 'allow') content += `Allow: ${path}\n`;
         if (rule === 'block') content += `Disallow: ${path}\n`;
       });
       content += `\n`;
@@ -416,7 +422,10 @@ export default function App() {
       
       {/* Mobile Header */}
       <div className="md:hidden bg-white border-b border-slate-200 p-4 flex justify-between items-center sticky top-0 z-50">
-        <div className="flex items-center space-x-2">
+        <div 
+          className="flex items-center space-x-2 cursor-pointer"
+          onClick={() => setActiveTab('upload')}
+        >
           <div className="bg-brand-600 p-1.5 rounded-lg">
             <Shield className="w-5 h-5 text-white" />
           </div>
@@ -432,7 +441,10 @@ export default function App() {
         fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:h-screen
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <div className="p-6 border-b border-slate-100 hidden md:flex items-center space-x-3">
+        <div 
+          className="p-6 border-b border-slate-100 hidden md:flex items-center space-x-3 cursor-pointer hover:bg-slate-50 transition-colors"
+          onClick={() => setActiveTab('upload')}
+        >
           <div className="bg-brand-600 p-2 rounded-xl shadow-lg shadow-brand-500/30">
             <Shield className="w-6 h-6 text-white" />
           </div>
@@ -455,8 +467,8 @@ export default function App() {
 
         <div className="absolute bottom-0 left-0 right-0 p-6 bg-slate-50 border-t border-slate-100">
           <div className="flex items-center justify-between text-xs text-slate-500">
-            <span>Database Version</span>
-            <span className="font-mono bg-slate-200 px-2 py-0.5 rounded text-slate-700">v2.4.0</span>
+            <span>Cleo Version</span>
+            <span className="font-mono bg-slate-200 px-2 py-0.5 rounded text-slate-700">v1.0.0</span>
           </div>
         </div>
       </aside>
@@ -486,365 +498,370 @@ export default function App() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
             {/* Center Column: Tools */}
-            <div className="lg:col-span-7 space-y-6">
-              
-              {/* Tab Content: Upload */}
-              {activeTab === 'upload' && (
-                <div className="bg-white rounded-2xl shadow-soft border border-slate-100 overflow-hidden animate-fadeIn">
-                  <div className="p-8 space-y-8">
-                    {/* Upload Area */}
-                    <div 
-                      className="border-2 border-dashed border-slate-200 rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:bg-brand-50/50 hover:border-brand-300 transition-all cursor-pointer group" 
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                        <div className="bg-brand-50 p-4 rounded-full mb-4 group-hover:bg-brand-100 group-hover:scale-110 transition-all duration-300">
-                            <Upload className="w-8 h-8 text-brand-600" />
-                        </div>
-                        <span className="text-base font-semibold text-slate-900">Upload sitemap.xml</span>
-                        <span className="text-sm text-slate-500 mt-1">or drag and drop your file here</span>
-                        <input 
-                          type="file" 
-                          accept=".xml" 
-                          ref={fileInputRef} 
-                          className="hidden" 
-                          onChange={handleFileUpload}
-                        />
-                    </div>
-
-                    <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                          <div className="w-full border-t border-slate-100"></div>
-                        </div>
-                        <div className="relative flex justify-center text-sm">
-                          <span className="px-2 bg-white text-slate-400">OR</span>
-                        </div>
-                    </div>
-
-                    {/* Manual Text Area */}
-                    <div>
-                        <div className="flex justify-between items-center mb-3">
-                             <label className="text-sm font-medium text-slate-700">Paste XML Content</label>
-                             <button 
-                                onClick={() => parseSitemap(sitemapXml)}
-                                className="text-xs bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/20 font-medium"
-                             >
-                                Process XML
-                             </button>
-                        </div>
-                       
-                        <textarea 
-                            value={sitemapXml}
-                            onChange={(e) => setSitemapXml(e.target.value)}
-                            placeholder="<urlset>&#10;  <url>&#10;    <loc>https://example.com/page</loc>&#10;  </url>&#10;</urlset>"
-                            className="w-full h-48 border border-slate-200 rounded-xl p-4 text-sm font-mono focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none resize-y bg-slate-50"
-                        />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Tab Content: Paths */}
-              {activeTab === 'paths' && (
-                <div className="bg-white rounded-2xl shadow-soft border border-slate-100 overflow-hidden animate-fadeIn flex flex-col h-[600px]">
-                  <div className="p-6 border-b border-slate-100 bg-white sticky top-0 z-10">
-                    <div className="flex justify-between items-center mb-4">
-                        <div className="flex items-center space-x-2">
-                          <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">{paths.length} Paths</span>
-                        </div>
-                        <div className="flex gap-2">
-                            <button 
-                                onClick={() => handleBulkPathAction('block')}
-                                className="px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-xs font-medium transition-colors"
-                            >
-                                Block All
-                            </button>
-                            <button 
-                                onClick={() => handleBulkPathAction('allow')}
-                                className="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-medium transition-colors"
-                            >
-                                Allow All
-                            </button>
-                            <button 
-                                onClick={() => handleBulkPathAction('reset')}
-                                className="px-3 py-1.5 text-slate-400 hover:text-slate-600 transition-colors"
-                                title="Reset All Rules"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div className="relative group">
-                        <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors" />
-                        <input 
-                            type="text" 
-                            placeholder="Filter paths..." 
-                            className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
-                            value={pathSearchTerm}
-                            onChange={(e) => setPathSearchTerm(e.target.value)}
-                        />
-                    </div>
-                  </div>
-
-                  <div className="flex-1 overflow-y-auto p-4">
-                    {paths.length > 0 ? (
-                        <PathRulesTree 
-                            paths={filteredPaths} 
-                            rules={pathRules} 
-                            onToggleRule={togglePath} 
-                        />
-                    ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                            <div className="bg-slate-50 p-4 rounded-full mb-3">
-                                <List className="w-8 h-8 text-slate-300" />
+            {activeTab !== 'preview' && (
+                <div className="lg:col-span-7 space-y-6">
+                
+                {/* Tab Content: Upload */}
+                {activeTab === 'upload' && (
+                    <div className="bg-white rounded-2xl shadow-soft border border-slate-100 overflow-hidden animate-fadeIn">
+                    <div className="p-8 space-y-8">
+                        {/* Upload Area */}
+                        <div 
+                        className="border-2 border-dashed border-slate-200 rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:bg-brand-50/50 hover:border-brand-300 transition-all cursor-pointer group" 
+                        onClick={() => fileInputRef.current?.click()}
+                        >
+                            <div className="bg-brand-50 p-4 rounded-full mb-4 group-hover:bg-brand-100 group-hover:scale-110 transition-all duration-300">
+                                <Upload className="w-8 h-8 text-brand-600" />
                             </div>
-                            <p>No paths detected yet.</p>
-                            <button onClick={() => setActiveTab('upload')} className="text-brand-600 text-sm font-medium hover:underline mt-2">Import Sitemap</button>
-                        </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Tab Content: Media & Files */}
-              {activeTab === 'media' && (
-                <div className="bg-white rounded-2xl shadow-soft border border-slate-100 overflow-hidden animate-fadeIn">
-                  <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-                    <h3 className="font-semibold text-slate-800">File Extensions</h3>
-                    <button 
-                        onClick={() => setShowAddFile(!showAddFile)}
-                        className="flex items-center space-x-1 px-3 py-1.5 bg-brand-50 text-brand-700 rounded-lg hover:bg-brand-100 transition-colors text-sm font-medium"
-                    >
-                        <Plus className="w-4 h-4" />
-                        <span>Add Type</span>
-                    </button>
-                  </div>
-                  
-                  {showAddFile && (
-                    <div className="p-4 bg-brand-50/50 border-b border-brand-100 flex gap-3 items-end animate-fadeIn">
-                        <div className="flex-1">
-                            <label className="text-xs font-bold text-brand-800 uppercase mb-1 block">Extension</label>
+                            <span className="text-base font-semibold text-slate-900">Upload sitemap.xml</span>
+                            <span className="text-sm text-slate-500 mt-1">or drag and drop your file here</span>
                             <input 
-                                type="text" 
-                                placeholder=".xyz" 
-                                className="w-full px-3 py-2 rounded-lg border border-brand-200 text-sm focus:ring-2 focus:ring-brand-500 outline-none"
-                                value={newFile.ext}
-                                onChange={(e) => setNewFile({...newFile, ext: e.target.value})}
+                            type="file" 
+                            accept=".xml" 
+                            ref={fileInputRef} 
+                            className="hidden" 
+                            onChange={handleFileUpload}
                             />
                         </div>
-                        <div className="flex-1">
-                            <label className="text-xs font-bold text-brand-800 uppercase mb-1 block">Category</label>
-                            <select 
-                                className="w-full px-3 py-2 rounded-lg border border-brand-200 text-sm focus:ring-2 focus:ring-brand-500 outline-none bg-white"
-                                value={newFile.category}
-                                onChange={(e) => setNewFile({...newFile, category: e.target.value})}
-                            >
-                                {fileGroups.map(g => <option key={g.category} value={g.category}>{g.category}</option>)}
-                                <option value="Custom">Custom</option>
-                            </select>
+
+                        <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-slate-100"></div>
+                            </div>
+                            <div className="relative flex justify-center text-sm">
+                            <span className="px-2 bg-white text-slate-400">OR</span>
+                            </div>
                         </div>
+
+                        {/* Manual Text Area */}
+                        <div>
+                            <div className="flex justify-between items-center mb-3">
+                                <label className="text-sm font-medium text-slate-700">Paste XML Content</label>
+                                <button 
+                                    onClick={() => parseSitemap(sitemapXml)}
+                                    className="text-xs bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/20 font-medium"
+                                >
+                                    Process XML
+                                </button>
+                            </div>
+                        
+                            <textarea 
+                                value={sitemapXml}
+                                onChange={(e) => setSitemapXml(e.target.value)}
+                                placeholder="<urlset>&#10;  <url>&#10;    <loc>https://example.com/page</loc>&#10;  </url>&#10;</urlset>"
+                                className="w-full h-48 border border-slate-200 rounded-xl p-4 text-sm font-mono focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none resize-y bg-slate-50"
+                            />
+                        </div>
+                    </div>
+                    </div>
+                )}
+
+                {/* Tab Content: Paths */}
+                {activeTab === 'paths' && (
+                    <div className="bg-white rounded-2xl shadow-soft border border-slate-100 overflow-hidden animate-fadeIn flex flex-col h-[600px]">
+                    <div className="p-6 border-b border-slate-100 bg-white sticky top-0 z-10">
+                        <div className="flex justify-between items-center mb-4">
+                            <div className="flex items-center space-x-2">
+                            <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">{paths.length} Paths</span>
+                            </div>
+                            <div className="flex gap-2">
+                                <button 
+                                    onClick={() => handleBulkPathAction('block')}
+                                    className="px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-xs font-medium transition-colors"
+                                >
+                                    Block All
+                                </button>
+                                <button 
+                                    onClick={() => handleBulkPathAction('allow')}
+                                    className="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-medium transition-colors"
+                                >
+                                    Allow All
+                                </button>
+                                <button 
+                                    onClick={() => handleBulkPathAction('reset')}
+                                    className="px-3 py-1.5 text-slate-400 hover:text-slate-600 transition-colors"
+                                    title="Reset All Rules"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div className="relative group">
+                            <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors" />
+                            <input 
+                                type="text" 
+                                placeholder="Filter paths..." 
+                                className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+                                value={pathSearchTerm}
+                                onChange={(e) => setPathSearchTerm(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-4">
+                        {paths.length > 0 ? (
+                            <PathRulesTree 
+                                paths={filteredPaths} 
+                                rules={pathRules} 
+                                onToggleRule={togglePath} 
+                            />
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                                <div className="bg-slate-50 p-4 rounded-full mb-3">
+                                    <List className="w-8 h-8 text-slate-300" />
+                                </div>
+                                <p>No paths detected yet.</p>
+                                <button onClick={() => setActiveTab('upload')} className="text-brand-600 text-sm font-medium hover:underline mt-2">Import Sitemap</button>
+                            </div>
+                        )}
+                    </div>
+                    </div>
+                )}
+
+                {/* Tab Content: Media & Files */}
+                {activeTab === 'media' && (
+                    <div className="bg-white rounded-2xl shadow-soft border border-slate-100 overflow-hidden animate-fadeIn">
+                    <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                        <h3 className="font-semibold text-slate-800">File Extensions</h3>
                         <button 
-                            onClick={handleAddFileType}
-                            className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-bold hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/20"
+                            onClick={() => setShowAddFile(!showAddFile)}
+                            className="flex items-center space-x-1 px-3 py-1.5 bg-brand-50 text-brand-700 rounded-lg hover:bg-brand-100 transition-colors text-sm font-medium"
                         >
-                            Add
+                            <Plus className="w-4 h-4" />
+                            <span>Add File Type</span>
                         </button>
                     </div>
-                  )}
-
-                  <div className="p-6 space-y-8">
-                    {fileGroups.map((group, idx) => (
-                      <div key={idx}>
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="p-1.5 bg-slate-100 rounded-lg text-slate-500">
-                            {group.icon}
-                          </div>
-                          <h3 className="font-medium text-slate-900">{group.category}</h3>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                          {group.extensions.map(ext => {
-                            const status = extensionRules[ext];
-                            const styles = getStatusStyles(status);
-                            
-                            return (
-                              <button
-                                key={ext}
-                                onClick={() => toggleExtension(ext)}
-                                className={`
-                                  flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-mono transition-all border
-                                  ${styles.bg} ${styles.border} ${styles.text}
-                                  hover:shadow-md hover:-translate-y-0.5
-                                `}
-                              >
-                                <span>{ext}</span>
-                                {styles.icon ? styles.icon : <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />}
-                              </button>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Tab Content: Crawlers */}
-              {activeTab === 'crawlers' && (
-                <div className="bg-white rounded-2xl shadow-soft border border-slate-100 overflow-hidden animate-fadeIn">
-                  <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-                    <div className="flex gap-2 w-full md:w-auto">
-                        <div className="relative flex-1 md:w-64">
-                          <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-                          <input 
-                            type="text" 
-                            placeholder="Search bots..." 
-                            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                          />
-                        </div>
-                        <select 
-                            className="px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none bg-white focus:border-brand-500"
-                            value={filterType}
-                            onChange={(e) => setFilterType(e.target.value)}
-                        >
-                            <option value="all">All</option>
-                            <option value="seo">SEO</option>
-                            <option value="training">AI</option>
-                            <option value="research">Research</option>
-                        </select>
-                    </div>
                     
-                    <button 
-                        onClick={() => setShowAddCrawler(!showAddCrawler)}
-                        className="p-2 bg-brand-50 text-brand-600 rounded-xl hover:bg-brand-100 transition-colors"
-                    >
-                        <Plus className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  {showAddCrawler && (
-                    <div className="p-4 bg-brand-50/50 border-b border-brand-100 flex flex-col md:flex-row gap-3 items-end animate-fadeIn">
-                        <div className="flex-1 w-full">
-                            <label className="text-xs font-bold text-brand-800 uppercase mb-1 block">User Agent</label>
-                            <input 
-                                type="text" 
-                                placeholder="e.g. MyCustomBot" 
-                                className="w-full px-3 py-2 rounded-lg border border-brand-200 text-sm focus:ring-2 focus:ring-brand-500 outline-none"
-                                value={newCrawler.ua}
-                                onChange={(e) => setNewCrawler({...newCrawler, ua: e.target.value})}
-                            />
-                        </div>
-                        <div className="flex-1 w-full">
-                            <label className="text-xs font-bold text-brand-800 uppercase mb-1 block">Company</label>
-                            <input 
-                                type="text" 
-                                placeholder="e.g. Acme Corp" 
-                                className="w-full px-3 py-2 rounded-lg border border-brand-200 text-sm focus:ring-2 focus:ring-brand-500 outline-none"
-                                value={newCrawler.company}
-                                onChange={(e) => setNewCrawler({...newCrawler, company: e.target.value})}
-                            />
-                        </div>
-                        <div className="w-full md:w-32">
-                            <label className="text-xs font-bold text-brand-800 uppercase mb-1 block">Type</label>
-                            <select 
-                                className="w-full px-3 py-2 rounded-lg border border-brand-200 text-sm focus:ring-2 focus:ring-brand-500 outline-none bg-white"
-                                value={newCrawler.type}
-                                onChange={(e) => setNewCrawler({...newCrawler, type: e.target.value})}
+                    {showAddFile && (
+                        <div className="p-4 bg-brand-50/50 border-b border-brand-100 flex gap-3 items-end animate-fadeIn">
+                            <div className="flex-1">
+                                <label className="text-xs font-bold text-brand-800 uppercase mb-1 block">Extension</label>
+                                <input 
+                                    type="text" 
+                                    placeholder=".xyz" 
+                                    className="w-full px-3 py-2 rounded-lg border border-brand-200 text-sm focus:ring-2 focus:ring-brand-500 outline-none"
+                                    value={newFile.ext}
+                                    onChange={(e) => setNewFile({...newFile, ext: e.target.value})}
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <label className="text-xs font-bold text-brand-800 uppercase mb-1 block">Category</label>
+                                <select 
+                                    className="w-full px-3 py-2 rounded-lg border border-brand-200 text-sm focus:ring-2 focus:ring-brand-500 outline-none bg-white"
+                                    value={newFile.category}
+                                    onChange={(e) => setNewFile({...newFile, category: e.target.value})}
+                                >
+                                    {fileGroups.map(g => <option key={g.category} value={g.category}>{g.category}</option>)}
+                                    <option value="Custom">Custom</option>
+                                </select>
+                            </div>
+                            <button 
+                                onClick={handleAddFileType}
+                                className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-bold hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/20"
                             >
-                                <option value="other">Other</option>
+                                Add
+                            </button>
+                        </div>
+                    )}
+
+                    <div className="p-6 space-y-8">
+                        {fileGroups.map((group, idx) => (
+                        <div key={idx}>
+                            <div className="flex items-center gap-2 mb-3">
+                            <div className="p-1.5 bg-slate-100 rounded-lg text-slate-500">
+                                {group.icon}
+                            </div>
+                            <h3 className="font-medium text-slate-900">{group.category}</h3>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                            {group.extensions.map(ext => {
+                                const status = extensionRules[ext];
+                                const styles = getStatusStyles(status);
+                                
+                                return (
+                                <button
+                                    key={ext}
+                                    onClick={() => toggleExtension(ext)}
+                                    className={`
+                                    flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-mono transition-all border
+                                    ${styles.bg} ${styles.border} ${styles.text}
+                                    hover:shadow-md hover:-translate-y-0.5
+                                    `}
+                                >
+                                    <span>{ext}</span>
+                                    {styles.icon ? styles.icon : <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />}
+                                </button>
+                                )
+                            })}
+                            </div>
+                        </div>
+                        ))}
+                    </div>
+                    </div>
+                )}
+
+                {/* Tab Content: Crawlers */}
+                {activeTab === 'crawlers' && (
+                    <div className="bg-white rounded-2xl shadow-soft border border-slate-100 overflow-hidden animate-fadeIn">
+                    <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+                        <div className="flex gap-2 w-full md:w-auto">
+                            <div className="relative flex-1 md:w-64">
+                            <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                            <input 
+                                type="text" 
+                                placeholder="Search bots..." 
+                                className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                            </div>
+                            <select 
+                                className="px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none bg-white focus:border-brand-500"
+                                value={filterType}
+                                onChange={(e) => setFilterType(e.target.value)}
+                            >
+                                <option value="all">All</option>
                                 <option value="seo">SEO</option>
-                                <option value="training">Training</option>
+                                <option value="training">AI</option>
                                 <option value="research">Research</option>
                             </select>
                         </div>
+                        
                         <button 
-                            onClick={handleAddCrawler}
-                            className="w-full md:w-auto px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-bold hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/20"
+                            onClick={() => setShowAddCrawler(!showAddCrawler)}
+                            className="flex items-center space-x-1 px-3 py-1.5 bg-brand-50 text-brand-700 rounded-lg hover:bg-brand-100 transition-colors text-sm font-medium"
                         >
-                            Add
+                            <Plus className="w-4 h-4" />
+                            <span>Add Bot</span>
                         </button>
                     </div>
-                  )}
 
-                  {/* Bulk Actions */}
-                  <div className="px-6 py-3 bg-slate-50 border-b border-slate-100 flex gap-2 overflow-x-auto">
-                        <button 
-                            onClick={() => handleBulkCrawlerAction('block')}
-                            className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:border-red-300 hover:text-red-600 rounded-lg text-xs font-medium transition-colors whitespace-nowrap"
-                        >
-                            Block Bots
-                        </button>
-                        <button 
-                            onClick={() => handleBulkCrawlerAction('allow')}
-                            className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:border-emerald-300 hover:text-emerald-600 rounded-lg text-xs font-medium transition-colors whitespace-nowrap"
-                        >
-                            Allow Bots
-                        </button>
-                        <button 
-                            onClick={allowSEOBots}
-                            className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:border-blue-300 hover:text-blue-600 rounded-lg text-xs font-medium transition-colors whitespace-nowrap"
-                        >
-                            Allow SEO
-                        </button>
-                         <button 
-                            onClick={() => handleBulkCrawlerAction('reset')}
-                            className="px-3 py-1.5 text-slate-400 hover:text-slate-600 transition-colors ml-auto"
-                            title="Reset All Blocks"
-                        >
-                            <Trash2 className="w-4 h-4" />
-                        </button>
-                  </div>
-
-                  {/* Crawler List */}
-                  <div className="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
-                    {filteredCrawlers.map((bot, idx) => {
-                        const isBlocked = blockedCrawlers.has(bot['user-agent']);
-                        return (
-                            <div key={idx} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors group">
-                                <div className="flex items-start space-x-4">
-                                    <div className={`mt-1 p-2.5 rounded-xl transition-colors ${isBlocked ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-500 group-hover:bg-white group-hover:shadow-sm'}`}>
-                                        <CrawlerIcon type={bot.type} />
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-semibold text-slate-900">{bot.company}</span>
-                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                                                bot.type === 'seo' ? 'bg-blue-100 text-blue-700' :
-                                                bot.type === 'training' ? 'bg-purple-100 text-purple-700' :
-                                                'bg-slate-100 text-slate-600'
-                                            }`}>{bot.type || 'General'}</span>
-                                        </div>
-                                        <div className="text-xs font-mono text-slate-500 mt-1 bg-slate-100 inline-block px-1.5 py-0.5 rounded border border-slate-200">
-                                            {bot['user-agent']}
-                                        </div>
-                                    </div>
-                                </div>
-                                <button 
-                                    onClick={() => toggleCrawler(bot['user-agent'])}
-                                    className={`w-24 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all duration-200 ${
-                                        isBlocked 
-                                        ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100' 
-                                        : 'bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100'
-                                    }`}
-                                >
-                                    {isBlocked ? 'Blocked' : 'Allowed'}
-                                </button>
+                    {showAddCrawler && (
+                        <div className="p-4 bg-brand-50/50 border-b border-brand-100 flex flex-col md:flex-row gap-3 items-end animate-fadeIn">
+                            <div className="flex-1 w-full">
+                                <label className="text-xs font-bold text-brand-800 uppercase mb-1 block">User Agent</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="e.g. MyCustomBot" 
+                                    className="w-full px-3 py-2 rounded-lg border border-brand-200 text-sm focus:ring-2 focus:ring-brand-500 outline-none"
+                                    value={newCrawler.ua}
+                                    onChange={(e) => setNewCrawler({...newCrawler, ua: e.target.value})}
+                                />
                             </div>
-                        );
-                    })}
-                    {filteredCrawlers.length === 0 && (
-                        <div className="p-12 text-center text-slate-400">
-                            No crawlers found matching your search.
+                            <div className="flex-1 w-full">
+                                <label className="text-xs font-bold text-brand-800 uppercase mb-1 block">Company</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="e.g. Acme Corp" 
+                                    className="w-full px-3 py-2 rounded-lg border border-brand-200 text-sm focus:ring-2 focus:ring-brand-500 outline-none"
+                                    value={newCrawler.company}
+                                    onChange={(e) => setNewCrawler({...newCrawler, company: e.target.value})}
+                                />
+                            </div>
+                            <div className="w-full md:w-32">
+                                <label className="text-xs font-bold text-brand-800 uppercase mb-1 block">Type</label>
+                                <select 
+                                    className="w-full px-3 py-2 rounded-lg border border-brand-200 text-sm focus:ring-2 focus:ring-brand-500 outline-none bg-white"
+                                    value={newCrawler.type}
+                                    onChange={(e) => setNewCrawler({...newCrawler, type: e.target.value})}
+                                >
+                                    <option value="other">Other</option>
+                                    <option value="seo">SEO</option>
+                                    <option value="training">Training</option>
+                                    <option value="research">Research</option>
+                                </select>
+                            </div>
+                            <button 
+                                onClick={handleAddCrawler}
+                                className="w-full md:w-auto px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-bold hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/20"
+                            >
+                                Add
+                            </button>
                         </div>
                     )}
-                  </div>
-                </div>
-              )}
 
-              {/* Tab Content: Preview (Mobile only) */}
-              {activeTab === 'preview' && (
-                 <div className="lg:hidden">
+                    {/* Bulk Actions */}
+                    <div className="px-6 py-3 bg-slate-50 border-b border-slate-100 flex gap-2 overflow-x-auto">
+                            <button 
+                                onClick={() => handleBulkCrawlerAction('block')}
+                                className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:border-red-300 hover:text-red-600 rounded-lg text-xs font-medium transition-colors whitespace-nowrap"
+                            >
+                                Block Bots
+                            </button>
+                            <button 
+                                onClick={() => handleBulkCrawlerAction('allow')}
+                                className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:border-emerald-300 hover:text-emerald-600 rounded-lg text-xs font-medium transition-colors whitespace-nowrap"
+                            >
+                                Allow Bots
+                            </button>
+                            <button 
+                                onClick={allowSEOBots}
+                                className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:border-blue-300 hover:text-blue-600 rounded-lg text-xs font-medium transition-colors whitespace-nowrap"
+                            >
+                                Allow SEO
+                            </button>
+                            <button 
+                                onClick={() => handleBulkCrawlerAction('reset')}
+                                className="px-3 py-1.5 text-slate-400 hover:text-slate-600 transition-colors ml-auto"
+                                title="Reset All Blocks"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                    </div>
+
+                    {/* Crawler List */}
+                    <div className="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
+                        {filteredCrawlers.map((bot, idx) => {
+                            const isBlocked = blockedCrawlers.has(bot['user-agent']);
+                            return (
+                                <div key={idx} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors group">
+                                    <div className="flex items-start space-x-4">
+                                        <div className={`mt-1 p-2.5 rounded-xl transition-colors ${isBlocked ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-500 group-hover:bg-white group-hover:shadow-sm'}`}>
+                                            <CrawlerIcon type={bot.type} />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-semibold text-slate-900">{bot.company}</span>
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                                                    bot.type === 'seo' ? 'bg-blue-100 text-blue-700' :
+                                                    bot.type === 'training' ? 'bg-purple-100 text-purple-700' :
+                                                    'bg-slate-100 text-slate-600'
+                                                }`}>{bot.type || 'General'}</span>
+                                            </div>
+                                            <div className="text-xs font-mono text-slate-500 mt-1 bg-slate-100 inline-block px-1.5 py-0.5 rounded border border-slate-200">
+                                                {bot['user-agent']}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => toggleCrawler(bot['user-agent'])}
+                                        className={`w-24 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all duration-200 ${
+                                            isBlocked 
+                                            ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100' 
+                                            : 'bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100'
+                                        }`}
+                                    >
+                                        {isBlocked ? 'Blocked' : 'Allowed'}
+                                    </button>
+                                </div>
+                            );
+                        })}
+                        {filteredCrawlers.length === 0 && (
+                            <div className="p-12 text-center text-slate-400">
+                                No crawlers found matching your search.
+                            </div>
+                        )}
+                    </div>
+                    </div>
+                )}
+                </div>
+            )}
+
+            {/* Right Column: Preview & Actions (Desktop Sticky) */}
+            {activeTab !== 'preview' && (
+                <div className="hidden lg:block lg:col-span-5">
+                <div className="sticky top-6 space-y-6">
                     <PreviewCard 
                         blockedCrawlers={blockedCrawlers} 
                         pathRules={pathRules} 
@@ -854,56 +871,63 @@ export default function App() {
                         downloadFile={downloadFile}
                         copied={copied}
                     />
-                 </div>
-              )}
-            </div>
 
-            {/* Right Column: Preview & Actions (Desktop Sticky) */}
-            <div className="hidden lg:block lg:col-span-5">
-              <div className="sticky top-6 space-y-6">
-                <PreviewCard 
-                    blockedCrawlers={blockedCrawlers} 
-                    pathRules={pathRules} 
-                    extensionRules={extensionRules}
-                    generateRobotsTxt={generateRobotsTxt}
-                    copyToClipboard={copyToClipboard}
-                    downloadFile={downloadFile}
-                    copied={copied}
-                />
-
-                <div className="bg-white rounded-2xl shadow-soft border border-slate-100 p-6">
-                    <h3 className="font-semibold text-slate-900 mb-4">Configuration Summary</h3>
-                    <div className="space-y-3">
-                        <div className="flex justify-between items-center p-4 bg-red-50 rounded-xl border border-red-100">
-                            <div className="flex items-center space-x-3">
-                                <div className="p-2 bg-red-100 rounded-lg text-red-600">
-                                    <Bot className="w-4 h-4" />
+                    <div className="bg-white rounded-2xl shadow-soft border border-slate-100 p-6">
+                        <h3 className="font-semibold text-slate-900 mb-4">Configuration Summary</h3>
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center p-4 bg-red-50 rounded-xl border border-red-100">
+                                <div className="flex items-center space-x-3">
+                                    <div className="p-2 bg-red-100 rounded-lg text-red-600">
+                                        <Bot className="w-4 h-4" />
+                                    </div>
+                                    <span className="text-sm text-red-900 font-medium">Blocked Bots</span>
                                 </div>
-                                <span className="text-sm text-red-900 font-medium">Blocked Bots</span>
+                                <span className="text-xl font-bold text-red-600">{blockedCrawlers.size}</span>
                             </div>
-                            <span className="text-xl font-bold text-red-600">{blockedCrawlers.size}</span>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-3">
-                           <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                              <div className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Disallowed</div>
-                              <div className="text-2xl font-bold text-slate-700">
-                                {Object.values(pathRules).filter(v => v === 'block').length + 
-                                 Object.values(extensionRules).filter(v => v === 'block').length}
-                              </div>
-                           </div>
-                           <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
-                              <div className="text-xs text-emerald-600 font-bold uppercase tracking-wider mb-1">Allowed</div>
-                              <div className="text-2xl font-bold text-emerald-600">
-                                 {Object.values(pathRules).filter(v => v === 'allow').length + 
-                                 Object.values(extensionRules).filter(v => v === 'allow').length}
-                              </div>
-                           </div>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                <div className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Disallowed</div>
+                                <div className="text-2xl font-bold text-slate-700">
+                                    {Object.values(pathRules).filter(v => v === 'block').length + 
+                                    Object.values(extensionRules).filter(v => v === 'block').length}
+                                </div>
+                            </div>
+                            <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                                <div className="text-xs text-emerald-600 font-bold uppercase tracking-wider mb-1">Allowed</div>
+                                <div className="text-2xl font-bold text-emerald-600">
+                                    {Object.values(pathRules).filter(v => v === 'allow').length + 
+                                    Object.values(extensionRules).filter(v => v === 'allow').length}
+                                </div>
+                            </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-              </div>
-            </div>
+                </div>
+            )}
+
+            {/* Full Screen Preview Mode */}
+            {activeTab === 'preview' && (
+                <div className="col-span-1 lg:col-span-12 animate-fadeIn">
+                    <div className="max-w-4xl mx-auto">
+                        <PreviewCard 
+                            blockedCrawlers={blockedCrawlers} 
+                            pathRules={pathRules} 
+                            extensionRules={extensionRules}
+                            generateRobotsTxt={generateRobotsTxt}
+                            copyToClipboard={copyToClipboard}
+                            downloadFile={downloadFile}
+                            copied={copied}
+                        />
+                        <div className="mt-6 text-center">
+                            <p className="text-slate-500 text-sm">
+                                Review your configuration above. When you're ready, download the file and place it in the root directory of your website.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
           </div>
         </div>

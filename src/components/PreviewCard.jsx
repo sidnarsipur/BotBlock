@@ -45,11 +45,6 @@ function PreviewCard({ blockedCrawlers, pathRules, extensionRules, generateRobot
                 <pre className="font-mono text-xs md:text-sm leading-relaxed text-slate-300 whitespace-pre-wrap">
                     {generateRobotsTxt()}
                 </pre>
-                {!hasRules && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="text-slate-700 text-sm font-mono"># No rules defined yet...</div>
-                    </div>
-                )}
             </div>
             <div className="px-4 py-2 bg-[#181825] text-[10px] text-slate-500 border-t border-slate-800 flex justify-between items-center font-mono">
                 <span>UTF-8</span>
