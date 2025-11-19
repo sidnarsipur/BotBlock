@@ -39,6 +39,7 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [pathSearchTerm, setPathSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const [crawlDelay, setCrawlDelay] = useState('none');
   const [copied, setCopied] = useState(false);
   const [userDomain, setUserDomain] = useState('https://example.com');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -72,6 +73,7 @@ export default function App() {
     const prefs = {
       extensionRules,
       blockedCrawlers: Array.from(blockedCrawlers),
+      crawlDelay,
       // Strip icons before saving to avoid React object serialization issues
       fileGroups: fileGroups.map(g => ({
         category: g.category,
@@ -107,6 +109,7 @@ export default function App() {
       
       if (type === 'crawlers' || type === 'all') {
           if (prefs.blockedCrawlers) setBlockedCrawlers(new Set(prefs.blockedCrawlers));
+          if (prefs.crawlDelay) setCrawlDelay(prefs.crawlDelay);
       }
     } catch (e) {
       console.error("Failed to load preferences", e);
@@ -351,12 +354,15 @@ export default function App() {
     if (blockedCrawlers.size > 0) {
       content += `# Blocked Bots (${blockedCrawlers.size})\n`;
       Array.from(blockedCrawlers).sort().forEach(ua => {
-        content += `User-agent: ${ua}\nDisallow: /\n\n`;
+        content += `User-agent: ${ua}\n`;
+        if (crawlDelay !== 'none') content += `Crawl-delay: ${crawlDelay}\n`;
+        content += `Disallow: /\n\n`;
       });
     }
 
     // 2. General Rules
     content += `# General Rules for all other bots\nUser-agent: *\n`;
+    if (crawlDelay !== 'none') content += `Crawl-delay: ${crawlDelay}\n`;
     
     // 2a. Paths
     const activePaths = Object.keys(pathRules).sort();
@@ -583,7 +589,7 @@ export default function App() {
             
             {/* Center Column: Tools */}
             {activeTab !== 'preview' && (
-                <div className="lg:col-span-7 space-y-6">
+                <div className="lg:col-span-8 space-y-6">
                 
                 {/* Tab Content: Upload */}
                 {activeTab === 'upload' && (
@@ -820,13 +826,13 @@ export default function App() {
                 {activeTab === 'crawlers' && (
                     <div className="bg-terminal-header rounded-lg border border-terminal-border overflow-hidden animate-fadeIn">
                     <div className="p-6 border-b border-terminal-border flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-                        <div className="flex gap-2 w-full md:w-auto">
-                            <div className="relative flex-1 md:w-64">
+                        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto flex-1 mr-4">
+                            <div className="relative flex-1 md:max-w-md">
                             <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500" />
                             <input 
                                 type="text" 
                                 placeholder="Search bots..." 
-                                className="w-full pl-10 pr-4 py-2 border border-terminal-border rounded-lg text-sm outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all bg-terminal-main text-slate-300 placeholder-slate-600 font-mono"
+                                className="w-full pl-10 pr-4 py-2 border border-terminal-border rounded-lg text-sm outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all bg-terminal-main text-slate-300 placeholder-slate-600"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -841,11 +847,25 @@ export default function App() {
                                 <option value="training">Model Training</option>
                                 <option value="ai-search">AI Search</option>
                             </select>
+                            <select 
+                                className="px-3 py-2 border border-terminal-border rounded-lg text-sm outline-none bg-terminal-main text-slate-300 focus:border-brand-500 font-mono"
+                                value={crawlDelay}
+                                onChange={(e) => setCrawlDelay(e.target.value)}
+                            >
+                                <option value="none">No Delay</option>
+                                <option value="1">1s Delay</option>
+                                <option value="5">5s Delay</option>
+                                <option value="10">10s Delay</option>
+                                <option value="15">15s Delay</option>
+                                <option value="30">30s Delay</option>
+                                <option value="60">60s Delay</option>
+                                <option value="120">120s Delay</option>
+                            </select>
                         </div>
                         
                         <button 
                             onClick={() => setShowAddCrawler(!showAddCrawler)}
-                            className="flex items-center space-x-1 px-3 py-1.5 bg-brand-900/20 text-brand-400 rounded border border-brand-900/30 hover:bg-brand-900/30 transition-colors text-sm font-medium font-mono"
+                            className="flex-shrink-0 flex items-center space-x-1 px-3 py-1.5 bg-brand-900/20 text-brand-400 rounded border border-brand-900/30 hover:bg-brand-900/30 transition-colors text-sm font-medium font-mono whitespace-nowrap"
                         >
                             <Plus className="w-4 h-4" />
                             <span>Add Bot</span>
@@ -986,7 +1006,7 @@ export default function App() {
 
             {/* Right Column: Preview & Actions (Desktop Sticky) */}
             {activeTab !== 'preview' && (
-                <div className="hidden lg:block lg:col-span-5">
+                <div className="hidden lg:block lg:col-span-4">
                 <div className="sticky top-6 space-y-6">
                     <PreviewCard 
                         blockedCrawlers={blockedCrawlers} 
