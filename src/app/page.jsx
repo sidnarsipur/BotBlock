@@ -52,6 +52,10 @@ export default function App() {
   useEffect(() => {
     const parsed = parseCSV(INITIAL_CRAWLER_CSV);
     setCrawlers(parsed);
+    
+    // Block all bots by default
+    const allBots = parsed.map(c => c['user-agent']);
+    setBlockedCrawlers(new Set(allBots));
   }, []);
 
   // --- Memoized Filters (Moved up for Handler Access) ---
@@ -239,6 +243,14 @@ export default function App() {
         }
     });
     
+    setBlockedCrawlers(newBlocked);
+  };
+
+  const allowSEOBots = () => {
+    const newBlocked = new Set(blockedCrawlers);
+    crawlers.filter(c => c.type === 'seo').forEach(bot => {
+        newBlocked.delete(bot['user-agent']);
+    });
     setBlockedCrawlers(newBlocked);
   };
 
@@ -768,6 +780,13 @@ export default function App() {
                     >
                         Allow {searchTerm || filterType !== 'all' ? 'Visible' : 'All'}
                     </button>
+                    <button 
+                        onClick={allowSEOBots}
+                        className="px-3 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-100 rounded-lg text-xs font-medium transition-colors flex items-center justify-center whitespace-nowrap"
+                        title="Ensure all SEO bots are allowed"
+                    >
+                        Allow SEO
+                    </button>
                      <button 
                         onClick={() => handleBulkCrawlerAction('reset')}
                         className="px-4 py-2 text-slate-500 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors"
@@ -801,11 +820,11 @@ export default function App() {
                                 onClick={() => toggleCrawler(bot['user-agent'])}
                                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                                     isBlocked 
-                                    ? 'bg-red-500 text-white shadow-md shadow-red-200' 
-                                    : 'bg-white border border-slate-200 text-slate-600 hover:border-red-300 hover:text-red-500'
+                                    ? 'bg-red-500 text-white shadow-md shadow-red-200 hover:bg-red-600' 
+                                    : 'bg-green-500 text-white shadow-md shadow-green-200 hover:bg-green-600'
                                 }`}
                             >
-                                {isBlocked ? 'Blocked' : 'Block'}
+                                {isBlocked ? 'Blocked' : 'Allowed'}
                             </button>
                         </div>
                     );
