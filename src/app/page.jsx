@@ -23,6 +23,7 @@ import { INITIAL_CRAWLER_CSV, FILE_TYPES } from '../data';
 import { parseCSV } from '../utils';
 import CrawlerIcon from '../components/CrawlerIcon';
 import PreviewCard from '../components/PreviewCard';
+import PathRulesTree from '../components/PathRulesTree';
 
 export default function App() {
   // --- State ---
@@ -173,11 +174,19 @@ export default function App() {
     }
   };
 
-  const togglePath = (path) => {
+  const togglePath = (path, forceState) => {
     setPathRules(prev => {
       const current = prev[path];
-      // Cycle: Neutral -> Block -> Allow -> Neutral
-      const next = current === 'block' ? 'allow' : (current === 'allow' ? undefined : 'block');
+      let next;
+      
+      if (forceState !== undefined) {
+          // If clicking the same state again, clear it (toggle off)
+          if (current === forceState) next = undefined;
+          else next = forceState;
+      } else {
+          // Legacy toggle cycle
+          next = current === 'block' ? 'allow' : (current === 'allow' ? undefined : 'block');
+      }
       
       const newRules = { ...prev };
       if (next) newRules[path] = next;
@@ -190,6 +199,17 @@ export default function App() {
   // Handler for Bulk Actions on Paths
   const handleBulkPathAction = (action) => {
     if (filteredPaths.length === 0) return;
+
+    // If acting on ALL paths (no filter or filter matches all), use wildcard
+    if (filteredPaths.length === paths.length) {
+        if (action === 'reset') {
+            setPathRules({});
+        } else {
+            // Set root rule only
+            setPathRules({ '/': action });
+        }
+        return;
+    }
 
     setPathRules(prev => {
       const newRules = { ...prev };
@@ -278,11 +298,28 @@ export default function App() {
     const activePaths = Object.keys(pathRules).sort();
     if (activePaths.length > 0) {
       content += `# Path Rules\n`;
-      activePaths.forEach(path => {
-        if (pathRules[path] === 'allow') content += `Allow: ${path}\n`;
+      
+      // Filter out redundant rules (e.g. if / is blocked, /blog doesn't need explicit block)
+      const effectiveRules = activePaths.reduce((acc, path) => {
+          const rule = pathRules[path];
+          // Check if covered by a shorter parent rule of same type
+          const isRedundant = activePaths.some(parent => {
+              if (parent === path) return false;
+              if (path.startsWith(parent) && pathRules[parent] === rule) return true;
+              return false;
+          });
+          
+          if (!isRedundant) {
+              acc.push({ path, rule });
+          }
+          return acc;
+      }, []);
+
+      effectiveRules.forEach(({ path, rule }) => {
+        if (rule === 'allow') content += `Allow: ${path}\n`;
       });
-      activePaths.forEach(path => {
-        if (pathRules[path] === 'block') content += `Disallow: ${path}\n`;
+      effectiveRules.forEach(({ path, rule }) => {
+        if (rule === 'block') content += `Disallow: ${path}\n`;
       });
       content += `\n`;
     }
@@ -519,13 +556,20 @@ export default function App() {
                                 onClick={() => handleBulkPathAction('block')}
                                 className="px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-xs font-medium transition-colors"
                             >
-                                Block Paths
+                                Block All
                             </button>
                             <button 
                                 onClick={() => handleBulkPathAction('allow')}
                                 className="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-medium transition-colors"
                             >
-                                Allow Paths
+                                Allow All
+                            </button>
+                            <button 
+                                onClick={() => handleBulkPathAction('reset')}
+                                className="px-3 py-1.5 text-slate-400 hover:text-slate-600 transition-colors"
+                                title="Reset All Rules"
+                            >
+                                <Trash2 className="w-4 h-4" />
                             </button>
                         </div>
                     </div>
@@ -542,46 +586,13 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                  <div className="flex-1 overflow-y-auto p-4">
                     {paths.length > 0 ? (
-                      <>
-                        {filteredPaths.map((path, idx) => {
-                          const status = pathRules[path];
-                          const styles = getStatusStyles(status);
-                          return (
-                            <div 
-                                key={idx} 
-                                onClick={() => togglePath(path)}
-                                className={`
-                                    group px-4 py-3 rounded-xl border cursor-pointer transition-all duration-200 flex items-center justify-between mx-2
-                                    ${styles.bg} ${styles.border}
-                                    ${status ? 'shadow-sm' : 'border-transparent hover:bg-slate-50'}
-                                `}
-                            >
-                              <div className="flex items-center overflow-hidden">
-                                 <div className={`w-2 h-2 rounded-full mr-3 flex-shrink-0 transition-colors ${status === 'block' ? 'bg-red-500' : (status === 'allow' ? 'bg-emerald-500' : 'bg-slate-200 group-hover:bg-slate-300')}`}></div>
-                                 <span className={`text-sm font-mono truncate ${styles.text} ${status ? 'font-medium' : ''}`}>{path}</span>
-                              </div>
-                              
-                              <div className="flex items-center">
-                                  {status && (
-                                      <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide mr-3 ${status === 'block' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                                          {status === 'block' ? 'Disallow' : 'Allow'}
-                                      </div>
-                                  )}
-                                  <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${styles.iconBg} ${!status && 'opacity-0 group-hover:opacity-100 border-slate-200'}`}>
-                                    {styles.icon || <div className="w-1.5 h-1.5 bg-slate-300 rounded-full" />}
-                                  </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                        {filteredPaths.length === 0 && (
-                            <div className="text-center py-12 text-slate-400">
-                                No paths match your filter.
-                            </div>
-                        )}
-                      </>
+                        <PathRulesTree 
+                            paths={filteredPaths} 
+                            rules={pathRules} 
+                            onToggleRule={togglePath} 
+                        />
                     ) : (
                         <div className="flex flex-col items-center justify-center h-full text-slate-400">
                             <div className="bg-slate-50 p-4 rounded-full mb-3">
