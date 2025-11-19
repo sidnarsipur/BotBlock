@@ -601,10 +601,9 @@ export default function App() {
                                 </button>
                                 <button 
                                     onClick={() => handleBulkPathAction('reset')}
-                                    className="px-3 py-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-                                    title="Reset All Rules"
+                                    className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-xs font-medium transition-colors"
                                 >
-                                    <Trash2 className="w-4 h-4" />
+                                    Clear
                                 </button>
                             </div>
                         </div>
@@ -825,10 +824,9 @@ export default function App() {
                             </button>
                             <button 
                                 onClick={() => handleBulkCrawlerAction('reset')}
-                                className="px-3 py-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors ml-auto"
-                                title="Reset All Blocks"
+                                className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-xs font-medium transition-colors ml-auto"
                             >
-                                <Trash2 className="w-4 h-4" />
+                                Clear
                             </button>
                     </div>
 

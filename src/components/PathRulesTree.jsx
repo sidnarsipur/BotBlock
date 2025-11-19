@@ -76,16 +76,19 @@ const PathNode = ({ node, rules, onToggleRule, depth = 0 }) => {
   const { status: effectiveStatus, source } = getEffectiveStatus(node.fullPath, rules);
   
   const isBlocked = effectiveStatus === 'block';
-  const isAllowed = effectiveStatus === 'allow';
+  const isInheritedAllow = !currentRule && effectiveStatus === 'allow' && source === 'inherited';
+  const isInheritedBlock = !currentRule && effectiveStatus === 'block' && source === 'inherited';
   
   // Visual styles based on state
   const rowBg = currentRule === 'block' ? 'bg-red-50/80 dark:bg-red-900/20 border-red-100 dark:border-red-900/30' : 
                 currentRule === 'allow' ? 'bg-emerald-50/80 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-900/30' : 
+                isInheritedAllow ? 'bg-emerald-50/30 dark:bg-emerald-900/10 border-emerald-50/50 dark:border-emerald-900/10' :
                 'hover:bg-slate-50 dark:hover:bg-slate-800 border-transparent';
                 
   const textStyle = currentRule === 'block' ? 'text-red-700 dark:text-red-400 font-medium' :
                     currentRule === 'allow' ? 'text-emerald-700 dark:text-emerald-400 font-medium' :
                     isBlocked ? 'text-red-400/70 dark:text-red-400/50' : // Inherited block
+                    isInheritedAllow ? 'text-emerald-600/70 dark:text-emerald-400/70' :
                     'text-slate-600 dark:text-slate-400';
 
   return (
@@ -130,26 +133,32 @@ const PathNode = ({ node, rules, onToggleRule, depth = 0 }) => {
         <div className="flex items-center space-x-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
           <button
             onClick={() => onToggleRule(node.fullPath, 'allow')}
+            disabled={isInheritedAllow}
             className={`
               p-1.5 rounded-md transition-all
               ${currentRule === 'allow' 
                 ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 shadow-sm ring-1 ring-emerald-200 dark:ring-emerald-900/50' 
-                : 'text-slate-400 dark:text-slate-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400'}
+                : isInheritedAllow
+                  ? 'opacity-30 cursor-not-allowed text-slate-300 dark:text-slate-600'
+                  : 'text-slate-400 dark:text-slate-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400'}
             `}
-            title="Allow Path"
+            title={isInheritedAllow ? "Allowed by parent" : "Allow Path"}
           >
             <Check className="w-4 h-4" />
           </button>
           
           <button
             onClick={() => onToggleRule(node.fullPath, 'block')}
+            disabled={isInheritedBlock}
             className={`
               p-1.5 rounded-md transition-all
               ${currentRule === 'block' 
                 ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 shadow-sm ring-1 ring-red-200 dark:ring-red-900/50' 
-                : 'text-slate-400 dark:text-slate-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400'}
+                : isInheritedBlock
+                  ? 'opacity-30 cursor-not-allowed text-slate-300 dark:text-slate-600'
+                  : 'text-slate-400 dark:text-slate-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400'}
             `}
-            title="Block Path"
+            title={isInheritedBlock ? "Blocked by parent" : "Block Path"}
           >
             <X className="w-4 h-4" />
           </button>
